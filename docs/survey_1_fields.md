@@ -1,6 +1,6 @@
 # 설문 1 · 구글폼 열과 DB 필드 대응표
 
-설문 1(인물 프로필) 구글폼 응답 CSV를 `research.db`에 저장할 때 쓰는 대응표입니다.
+설문 1(인물 프로필) 구글폼 응답 CSV를 `survey_1.db`에 저장할 때 쓰는 대응표입니다.
 저장 코드는 `scripts/import_survey_1.py`이며, 이 표와 코드의 `ITEMS`는 항상 같은 내용이어야 합니다.
 
 ## 저장 위치
@@ -90,7 +90,7 @@ python scripts/import_survey_1.py --csv data/survey_1.csv --dry-run
 python scripts/import_survey_1.py --csv data/survey_1.csv --db data/research_test.db
 
 # 3) 실제 DB에 저장
-python scripts/import_survey_1.py --csv data/survey_1.csv --db data/research.db
+python scripts/import_survey_1.py --csv data/survey_1.csv --db data/survey_1.db
 ```
 
 DB 파일이 없으면 경로 오타로 빈 DB가 생기지 않도록 멈춥니다. 새 DB를 만들 때만 `--create-db`를 붙입니다.
@@ -104,4 +104,4 @@ DB 파일이 없으면 경로 오타로 빈 DB가 생기지 않도록 멈춥니�
 | `survey_answer` | 참가자별 32행, 3명이면 96행 |
 | 필수 문항 빈칸 | 0개 |
 
-실제 응답 CSV와 `research.db`는 개인 정보가 들어 있으므로 깃에 올리지 않습니다.
+실제 응답 CSV와 `survey_1.db`는 개인 정보가 들어 있으므로 깃에 올리지 않습니다.

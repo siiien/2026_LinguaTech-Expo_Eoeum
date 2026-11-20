@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""설문 1(인물 프로필) 구글폼 응답 CSV를 research.db에 저장한다.
+"""설문 1(인물 프로필) 구글폼 응답 CSV를 survey_1.db에 저장한다.
 
 저장하는 테이블: participant, survey_item, survey_answer
 열 대응표와 정제 규칙: docs/survey_1_fields.md
@@ -14,7 +14,7 @@
     python scripts/import_survey_1.py --csv data/survey_1.csv --db data/research_test.db
 
     # 3) 실제 DB에 저장
-    python scripts/import_survey_1.py --csv data/survey_1.csv --db data/research.db
+    python scripts/import_survey_1.py --csv data/survey_1.csv --db data/survey_1.db
 
 여러 번 실행해도 같은 행이 두 번 들어가지 않는다. 같은 참가자·문항은 최신 답변으로 덮어쓴다.
 """
@@ -409,9 +409,9 @@ def verify(conn: sqlite3.Connection, pids: list[str]) -> bool:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="설문 1 구글폼 CSV를 research.db에 저장합니다.")
+    parser = argparse.ArgumentParser(description="설문 1 구글폼 CSV를 survey_1.db에 저장합니다.")
     parser.add_argument("--csv", required=True, type=Path, help="구글폼 응답 CSV 경로")
-    parser.add_argument("--db", type=Path, help="SQLite DB 경로 (예: data/research.db)")
+    parser.add_argument("--db", type=Path, help="SQLite DB 경로 (예: data/survey_1.db)")
     parser.add_argument("--dry-run", action="store_true", help="DB에 쓰지 않고 CSV만 검사")
     parser.add_argument("--create-db", action="store_true",
                         help="DB 파일이 없을 때 새로 만듦 (경로 오타로 빈 DB가 생기는 것을 막기 위해 기본은 꺼짐)")
