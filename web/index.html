@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>사이 · 문맥을 읽는 번역 연구</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><a class="wordmark" href="/" aria-label="사이 홈">사이<span class="brand-dot">.</span></a><span class="top-note">문맥을 읽는 번역 연구</span><span class="tag">RESEARCH PROTOTYPE · 0.2</span></header>
+  <main>
+    <section class="intro"><div><p class="eyebrow">BEYOND THE WORDS</p><h1>말의 뜻과<br>사이를 함께.</h1><p class="lede">같은 말도 맥락에 따라 다른 뜻이 됩니다.<br>앞선 대화와 관계를 더해, 어떻게 옮길지 살펴보세요.</p></div><aside class="example-quote"><span class="quote-label">“I'm good.”</span><p>커피를 권했을 때는 사양.<br>안부를 물었을 때는 상태 설명.</p><span class="quote-foot">번역이 보존해야 할 것은, 말이 하는 일.</span></aside></section>
+    <section class="workspace" aria-label="번역 작업 공간">
+      <div class="controls-bar"><div class="directions" role="group" aria-label="번역 방향"><button id="en-ko" class="direction selected" type="button" aria-pressed="true">영어 <span>→</span> 한국어</button><button id="ko-en" class="direction" type="button" aria-pressed="false">한국어 <span>→</span> 영어</button></div><span id="connection" class="connection">서버 상태 확인 중</span></div>
+      <div class="panels">
+        <section class="input-panel"><div class="panel-title"><h2>01 <span>말과 문맥</span></h2><button id="custom" type="button" class="text-button">직접 입력</button></div>
+          <label for="sample">시작할 사례</label><select id="sample"><option value="">사례 불러오는 중</option></select>
+          <label for="source">번역할 문장 <span id="source-language" class="field-note">ENGLISH</span></label><textarea id="source" class="source-field" rows="3" maxlength="6000" placeholder="번역할 문장을 입력하세요."></textarea>
+          <label for="context">앞선 대화 <span class="field-note">선택</span></label><textarea id="context" rows="4" maxlength="16000" placeholder="상대: Would you like another coffee?&#10;나: ..."></textarea><p class="field-help">한 줄에 한 발화씩 ‘나:’ 또는 ‘상대:’로 시작해 주세요.</p>
+          <label for="relationship">화자와 상대의 관계 <span class="field-note">선택</span></label><textarea id="relationship" rows="3" maxlength="2000" placeholder="예: 서로 반말을 쓰기로 한 동급 동료"></textarea>
+          <div class="actions"><button id="preview" class="button secondary" type="button">저장된 번역 예시 보기</button><button id="translate" class="button primary" type="button" disabled>모델로 번역</button></div>
+          <label class="checkbox-label"><input id="compare" type="checkbox"> 세 조건 비교 <span>원문만 · 문맥 포함 · 화용 보존 지침</span></label>
+          <p id="mode-help" class="field-help">예시 보기는 저장된 초안을 표시하며 API를 호출하지 않습니다.</p>
+        </section>
+        <section class="output-panel" aria-labelledby="output-heading"><div class="panel-title"><h2 id="output-heading">02 <span>옮긴 말</span></h2><span id="output-badge" class="small-tag">준비</span></div>
+          <div id="error" class="error" role="alert" hidden></div><div id="results" aria-live="polite"><div class="empty-state"><span class="empty-mark">↗</span><h3>문맥을 더하면,<br>번역의 기준이 달라집니다.</h3><p>왼쪽에서 사례를 고른 뒤<br>저장된 번역 예시를 확인해 보세요.</p></div></div>
+          <div class="output-bottom"><button id="download" class="text-button" type="button" disabled>결과 JSON 내려받기 ↓</button><p>저장된 예시는 AI 작성 초안입니다.<br>모델 결과와 사람 평가 점수를 구분해 기록합니다.</p></div>
+        </section>
+      </div>
+    </section>
+    <section class="principles" aria-label="번역 원칙"><article><span>01 / 의도</span><h3>말이 하는 일을 유지하기</h3><p>부탁을 명령으로, 유보를 수락으로 바꾸지 않습니다.</p></article><article><span>02 / 관계</span><h3>근거가 있는 거리감</h3><p>주어진 관계를 참고하되, 직급이나 친밀감을 만들어내지 않습니다.</p></article><article><span>03 / 모호함</span><h3>모르는 것은 단정하지 않기</h3><p>문맥이 부족하면 원문의 여러 해석 가능성을 유지합니다.</p></article></section>
+    <details class="setup"><summary>모델 연결 및 실험 안내</summary><p>실제 번역은 서버의 <code>OPENAI_API_KEY</code>와 <code>PRAGMATICS_MODEL</code>을 설정한 뒤 서버를 다시 실행하면 사용할 수 있습니다. 연결을 확인하기 전까지 설정 감지 상태로 표시합니다. 모델로 번역을 누르면 입력 문장·문맥·관계가 설정한 API에 전송됩니다.</p><p>세 조건 비교는 최대 3회의 모델 호출을 사용합니다. 정보가 없는 영어→한국어 입력에는 일반 해요체를 기본으로 쓰며, 이를 실제 관계의 정답으로 취급하지 않습니다. 실험 방법과 주석 기준은 프로젝트의 README와 연구 설계에 있습니다.</p></details>
+  </main><footer><span>사이 · CONTEXT MATTERS</span><span>영어→한국어 중심 · 양방향 탐색</span></footer>
+</body>
+</html>

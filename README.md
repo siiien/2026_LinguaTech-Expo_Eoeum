@@ -27,8 +27,6 @@ Eoeum은 앞선 대화와 화자 간 관계를 참고해, 번역에서 말의 �
 
 ## 디렉토리 구조
 
-데모 코드와 실험 자료를 추가할 때 적용할 구조입니다.
-
 ```text
 2026_LinguaTech-Expo_Eoeum/
 ├── README.md
@@ -64,8 +62,29 @@ Eoeum은 앞선 대화와 화자 간 관계를 참고해, 번역에서 말의 �
 | `feat/web-demo` | `web/`의 원문·문맥 입력, 번역 결과 표시, 세 조건 비교 화면 |
 | `research/pilot-evaluation` | `data/`, `scripts/`, `docs/`의 파일럿 사례, 실험 준비, 평가 기준 |
 
-## 진행 상태
+## 로컬 실행
 
-로컬 작업본에 브라우저 데모와 두 번역 방향의 합성 사례 초안이 있습니다. 데모에서는 앞선 대화와 관계를 입력하고 세 조건의 번역을 비교할 수 있습니다. 사례와 참고 번역은 사람 검토를 앞두고 있으며, 모델 비교 평가도 예정되어 있습니다.
+Python 3으로 데모를 실행합니다.
 
-이 저장소는 프로젝트 소개로 시작합니다. 데모 코드와 실험 자료를 추가할 때 실행 방법도 함께 문서화할 예정입니다.
+```sh
+python3 app.py
+```
+
+브라우저에서 <http://127.0.0.1:8765>를 열고 사례를 선택하면 API 키 없이 저장된 번역 예시를 볼 수 있습니다. 실제 모델로 번역하려면 서버를 시작하기 전에 `OPENAI_API_KEY`와 `PRAGMATICS_MODEL`을 설정합니다.
+
+두 번역 방향의 실험 요청 파일은 다음 명령으로 생성할 수 있습니다.
+
+```sh
+python3 scripts/prepare_experiment.py --direction en-ko --out-dir outputs/en-ko
+python3 scripts/prepare_experiment.py --direction ko-en --out-dir outputs/ko-en
+```
+
+각 명령은 모델 호출 없이 요청 목록과 주석 양식을 생성합니다.
+
+## 연구 자료
+
+- 초기 [연구 설계](docs/research_plan.md)
+- [주석 가이드](docs/annotation_guide.md)
+- [선행연구](docs/related_work.md)
+
+영어→한국어와 한국어→영어 파일럿은 각각 합성 사례 24개로 구성됩니다. 사례와 참고 번역은 사람 검토를 앞두고 있으며, 모델 비교 평가도 예정되어 있습니다.
