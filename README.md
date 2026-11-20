@@ -93,7 +93,7 @@ python3 kakao/kakao_db.py --merge P01.db P02.db --db outputs/kakao/merged.db   #
 
 각자 자기 컴퓨터에서 `research.db`를 만들고, DB 파일은 GitHub이 아닌 비공개 경로로 담당자에게 보내 합칩니다. 참여자 ID(P01, P02 …)는 담당자가 미리 나눠 줍니다.
 
-자세한 사용법은 [kakao/README.md](kakao/README.md), 단계별 원리와 저장 구조는 [docs/kakao_extraction.md](docs/kakao_extraction.md)에 있습니다.
+**팀원·담당자 진행 순서는 [docs/kakao_team_guide.md](docs/kakao_team_guide.md)** 를 먼저 보세요. 자세한 사용법은 [kakao/README.md](kakao/README.md), 단계별 원리와 저장 구조는 [docs/kakao_extraction.md](docs/kakao_extraction.md)에 있습니다.
 
 ## 실험 준비
 
