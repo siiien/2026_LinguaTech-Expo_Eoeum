@@ -46,13 +46,22 @@ Eoeum은 앞선 대화와 화자 간 관계를 참고해, 번역에서 말의 �
 │   └── pilot_ko_en.jsonl
 ├── scripts/
 │   └── prepare_experiment.py    # 사례 검증 및 실험 요청 파일 생성
+├── kakao/                       # 카카오톡 1:1 대화 추출·익명화·DB 저장
+│   ├── kakao_pipeline.py        # prepare / build (조각·80/20 분리·D4 통계)
+│   ├── kakao_db.py              # 결과 → SQLite 적재
+│   ├── schema.sql               # 공통 저장 구조
+│   ├── kakao_web.py             # 로컬 화면
+│   └── samples/                 # 가상 인물 데이터 + sample.db
 ├── docs/
 │   ├── research_plan.md
 │   ├── annotation_guide.md
-│   └── related_work.md
+│   ├── related_work.md
+│   └── kakao_extraction.md      # 카카오톡 추출 원리와 DB 구조
 ├── tests/
-│   └── test_core.py
-└── outputs/                     # 로컬 생성 결과물, Git 추적 제외
+│   ├── test_core.py
+│   └── test_kakao.py
+├── data/kakao/                  # 실제 카톡 원본·manifest, Git 추적 제외
+└── outputs/                     # 로컬 생성 결과물·실제 DB, Git 추적 제외
 ```
 
 ## 브랜치별 역할
@@ -69,6 +78,19 @@ Eoeum은 앞선 대화와 화자 간 관계를 참고해, 번역에서 말의 �
 | `research/results-insights` | 조건별 결과 집계, 번역 오류 분석, 연구 과정과 인사이트 정리 |
 
 첫 작업은 카카오톡 사례 1건과 구글폼 테스트 응답 1건을 공통 형식으로 저장하고, 파일럿 사례를 기준으로 결과표와 오류 분류 기준을 잡는 것입니다.
+
+## 카카오톡 대화 추출
+
+카카오톡 1:1 대화 내보내기 파일을 익명화해 대화 조각과 말투 통계를 만들고 SQLite DB에 저장합니다. 실제 대화와 결과물은 Git에 올리지 않습니다.
+
+```sh
+python3 kakao/kakao_web.py                      # 로컬 화면 (http://127.0.0.1:8765)
+python3 kakao/kakao_pipeline.py prepare --manifest data/kakao/manifest.csv --out outputs/kakao
+python3 kakao/kakao_pipeline.py build --out outputs/kakao
+python3 kakao/kakao_db.py --out outputs/kakao --db outputs/kakao/research.db
+```
+
+자세한 사용법은 [kakao/README.md](kakao/README.md), 단계별 원리와 저장 구조는 [docs/kakao_extraction.md](docs/kakao_extraction.md)에 있습니다.
 
 ## 실험 준비
 

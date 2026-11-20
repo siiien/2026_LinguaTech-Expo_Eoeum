@@ -3,3 +3,9 @@ __pycache__/
 outputs/
 .env
 .env.*
+
+# 카카오톡 실제 데이터 — 커밋 금지 (원본·manifest(실명)·결과·DB)
+data/kakao/
+*.db
+!kakao/samples/sample.db
+.claude/

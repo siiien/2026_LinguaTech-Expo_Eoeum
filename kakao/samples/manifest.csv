@@ -1,0 +1,4 @@
+participant_id,chat_id,file,relation,self_name,partner_name,self_aliases,partner_aliases,extra_names,places,date_from,date_to
+P01,C01,P01_friend_pc.txt,친구,,,,,지수,,,
+P01,C02,P01_senior_android.txt,선배,,,,,,,,
+P02,C01,P02_friend_ios.txt,친구,,,,,지수,,,
