@@ -42,6 +42,14 @@ CREATE TABLE IF NOT EXISTS shared_room (
     PRIMARY KEY (chat_key_a, chat_key_b)
 );
 
+-- 채팅방 지문 = 메시지별 (시각 + 이름을 일반화한 본문)의 해시. 본문은 들어 있지 않다.
+-- 여러 사람의 DB를 합칠 때 같은 방을 제출했는지(shared_room) 다시 계산하는 데 쓴다.
+CREATE TABLE IF NOT EXISTS chat_fingerprint (
+    chat_key TEXT NOT NULL REFERENCES chat(chat_key) ON DELETE CASCADE,
+    fp       TEXT NOT NULL,
+    PRIMARY KEY (chat_key, fp)
+) WITHOUT ROWID;
+
 -- 연속 대화 구간 (80/20 분리 단위)
 CREATE TABLE IF NOT EXISTS session (
     session_id   TEXT PRIMARY KEY,                 -- P01-C01-S202405021512

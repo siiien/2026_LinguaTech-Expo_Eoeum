@@ -34,6 +34,8 @@ RAW = DATA / "raw"
 MANIFEST = DATA / "manifest.csv"
 OUT = REPO / "outputs" / "kakao_web"
 DB_PATH = REPO / "outputs" / "kakao" / "research.db"
+MERGED_PATH = REPO / "outputs" / "kakao" / "merged.db"
+INBOX = REPO / "outputs" / "kakao_merge"   # 팀원에게 받은 DB 를 올려 두는 곳 (Git 제외)
 FIELDS = ["participant_id", "chat_id", "file", "relation", "self_name", "partner_name", "self_aliases",
           "partner_aliases", "extra_names", "places", "date_from", "date_to"]
 
@@ -221,7 +223,47 @@ class Handler(BaseHTTPRequestHandler):
                     counts = kakao_db.load(OUT, DB_PATH)
                 except SystemExit as e:
                     return self._send(200, {"rc": 1, "log": str(e)})
-                return self._send(200, {"rc": 0, "counts": counts, "db": str(DB_PATH.relative_to(REPO))})
+                return self._send(200, {"rc": 0, "counts": counts, "db": DB_PATH.relative_to(REPO).as_posix()})
+            if path == "/api/merge-upload":
+                import kakao_db
+                name = re.sub(r"[\\/:*?\"<>|]+", "_", Path(body["name"]).name)
+                if not name.lower().endswith((".db", ".sqlite", ".sqlite3")):
+                    return self._send(200, {"rc": 1, "log": f"{name}: .db 파일만 올릴 수 있음"})
+                INBOX.mkdir(parents=True, exist_ok=True)
+                p = INBOX / name
+                i = 2
+                while p.exists():  # 다들 research.db 라서 이름이 겹침 → 번호 붙임
+                    p = INBOX / f"{Path(name).stem}_{i}{Path(name).suffix}"
+                    i += 1
+                p.write_bytes(base64.b64decode(body["b64"]))
+                try:
+                    info = kakao_db.inspect_db(p)
+                except SystemExit as e:
+                    p.unlink()
+                    return self._send(200, {"rc": 1, "log": str(e)})
+                return self._send(200, {"rc": 0, "file": p.name, "participants": info["participants"],
+                                        "messages": info["messages"], "split": info["split"],
+                                        "sample": info["sample"]})
+            if path == "/api/merge":
+                import kakao_db
+                srcs = [INBOX / Path(f).name for f in body.get("files", [])]
+                if body.get("include_mine") and DB_PATH.exists():
+                    srcs.insert(0, DB_PATH)
+                if body.get("fresh") and MERGED_PATH.exists():
+                    MERGED_PATH.unlink()
+                try:
+                    r = kakao_db.merge(srcs, MERGED_PATH, replace=bool(body.get("replace")))
+                except SystemExit as e:
+                    return self._send(200, {"rc": 1, "log": str(e)})
+                for s in srcs:  # 합친 사본은 지움 (내 research.db 는 그대로)
+                    if s.parent == INBOX:
+                        s.unlink(missing_ok=True)
+                r.update(rc=0, db=MERGED_PATH.relative_to(REPO).as_posix())
+                return self._send(200, r)
+            if path == "/api/merge-clear":
+                for p in INBOX.glob("*") if INBOX.exists() else []:
+                    p.unlink()
+                return self._send(200, {"ok": True})
             self._send(404, {"error": "not found"})
         except Exception as e:
             self._send(500, {"error": f"{type(e).__name__}: {e}"})

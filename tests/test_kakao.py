@@ -172,5 +172,91 @@ class DbTest(unittest.TestCase):
             shutil.rmtree(tmp, ignore_errors=True)
 
 
+class DbMergeTest(unittest.TestCase):
+    """한 사람씩 따로 만든 DB 를 합치면 한꺼번에 만든 DB 와 같아야 한다."""
+
+    @classmethod
+    def setUpClass(cls):
+        import kakao_db
+        cls.kdb = kakao_db
+        cls.tmp = Path(tempfile.mkdtemp())
+        cls.full = cls.tmp / "full.db"
+        cls.full_counts = kakao_db.build_sample(cls.full)
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.tmp, ignore_errors=True)
+
+    def _only(self, keep, name=None):
+        import sqlite3
+        p = self.tmp / (name or f"{keep}.db")
+        shutil.copy(self.full, p)
+        con = sqlite3.connect(str(p))
+        con.execute("PRAGMA foreign_keys = ON")
+        con.execute("DELETE FROM participant WHERE participant_id <> ?", (keep,))
+        con.commit()
+        con.close()
+        return p
+
+    def _gen(self, db, pid, gen_id, value, item_q="질문"):
+        import sqlite3
+        con = sqlite3.connect(str(db))
+        con.execute("PRAGMA foreign_keys = ON")
+        con.execute("INSERT OR IGNORE INTO survey_item VALUES ('D6-01','D6','관계','친구',?)", (item_q,))
+        fid = con.execute("SELECT fragment_id FROM v_retrieval_pool LIMIT 1").fetchone()[0]
+        con.execute("INSERT INTO generation(gen_id, participant_id, condition, item_id, model, prompt_text, "
+                    "answer_text, created_at) VALUES (?,?,'D','D6-01','m','p','a','t')", (gen_id, pid))
+        con.execute("INSERT INTO generation_fragment VALUES (?,?,1,0.9)", (gen_id, fid))
+        con.execute("INSERT INTO score VALUES (?,'P1',?,NULL,'auto',NULL)", (gen_id, value))
+        con.commit()
+        con.close()
+
+    def test_merge_equals_full_and_remaps_ids(self):
+        import sqlite3
+        a, b = self._only("P01"), self._only("P02")
+        self._gen(a, "P01", 1, 3)
+        self._gen(b, "P02", 1, 4)  # 두 DB 모두 gen_id=1 → 합치면 번호가 새로 매겨져야 함
+        out = self.tmp / "merged.db"
+        r = self.kdb.merge([a, b], out)
+        self.assertEqual(r["added"], ["P01", "P02"])
+        self.assertEqual(r["shared_rooms"], 1)  # 따로 넣어도 공유 채팅방을 다시 찾음
+        for k in ("participant", "chat", "session", "message", "fragment", "d4_stats", "retrieval_pool"):
+            self.assertEqual(r["counts"][k], self.full_counts[k], k)
+        con = sqlite3.connect(str(out))
+        rows = con.execute("SELECT g.participant_id, s.value, (SELECT COUNT(*) FROM generation_fragment f "
+                           "WHERE f.gen_id = g.gen_id) FROM generation g JOIN score s USING (gen_id) "
+                           "ORDER BY 1").fetchall()
+        self.assertEqual(rows, [("P01", 3.0, 1), ("P02", 4.0, 1)])
+        con.close()
+
+    def test_conflicts(self):
+        a = self._only("P01", "c_P01.db")
+        out = self.tmp / "conflict.db"
+        self.kdb.merge([a], out)
+        with self.assertRaises(SystemExit):  # 같은 참여자 → 멈춤
+            self.kdb.merge([a], out)
+        a2 = self._only("P01", "c_P01_again.db")
+        r = self.kdb.merge([a2], out, replace=True)
+        self.assertEqual(r["replaced"], ["P01"])
+        self.assertEqual(r["counts"]["participant"], 1)
+        with self.assertRaises(SystemExit):  # 두 DB 에 같은 참여자
+            self.kdb.merge([self._only("P02", "x1.db"), self._only("P02", "x2.db")], self.tmp / "dup.db")
+        x, y = self._only("P01", "q1.db"), self._only("P02", "q2.db")
+        self._gen(x, "P01", 1, 3, "질문")
+        self._gen(y, "P02", 1, 3, "다른 질문")
+        with self.assertRaises(SystemExit):  # 같은 문항 ID, 다른 내용
+            self.kdb.merge([x, y], self.tmp / "items.db")
+        import sqlite3
+        con = sqlite3.connect(str(self.tmp / "items.db"))  # 미리 검사에서 걸리면 아무것도 들어가지 않음
+        self.assertEqual(con.execute("SELECT COUNT(*) FROM participant").fetchone()[0], 0)
+        con.close()
+
+    def test_not_a_db(self):
+        p = self.tmp / "junk.db"
+        p.write_bytes(b"not a database" * 50)
+        with self.assertRaises(SystemExit):
+            self.kdb.merge([p], self.tmp / "j.db")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -48,7 +48,7 @@ Eoeum은 앞선 대화와 화자 간 관계를 참고해, 번역에서 말의 �
 │   └── prepare_experiment.py    # 사례 검증 및 실험 요청 파일 생성
 ├── kakao/                       # 카카오톡 1:1 대화 추출·익명화·DB 저장
 │   ├── kakao_pipeline.py        # prepare / build (조각·80/20 분리·D4 통계)
-│   ├── kakao_db.py              # 결과 → SQLite 적재
+│   ├── kakao_db.py              # 결과 → SQLite 적재, 여러 사람 DB 합치기
 │   ├── schema.sql               # 공통 저장 구조
 │   ├── kakao_web.py             # 로컬 화면
 │   └── samples/                 # 가상 인물 데이터 + sample.db
@@ -88,7 +88,10 @@ python3 kakao/kakao_web.py                      # 로컬 화면 (http://127.0.0.
 python3 kakao/kakao_pipeline.py prepare --manifest data/kakao/manifest.csv --out outputs/kakao
 python3 kakao/kakao_pipeline.py build --out outputs/kakao
 python3 kakao/kakao_db.py --out outputs/kakao --db outputs/kakao/research.db
+python3 kakao/kakao_db.py --merge P01.db P02.db --db outputs/kakao/merged.db   # 팀원 DB 합치기
 ```
+
+각자 자기 컴퓨터에서 `research.db`를 만들고, DB 파일은 GitHub이 아닌 비공개 경로로 담당자에게 보내 합칩니다. 참여자 ID(P01, P02 …)는 담당자가 미리 나눠 줍니다.
 
 자세한 사용법은 [kakao/README.md](kakao/README.md), 단계별 원리와 저장 구조는 [docs/kakao_extraction.md](docs/kakao_extraction.md)에 있습니다.
 

@@ -15,7 +15,7 @@ kakao/
 ├── kakao_anonymize.py   # 미디어 표식·익명화·민감 flag
 ├── kakao_features.py    # D4 통계·블록3·P2 '표현 유사' 판정 (입력과 채점이 같은 함수 사용)
 ├── kakao_pipeline.py    # prepare / build / stats-text / style-match
-├── kakao_db.py          # 결과 → SQLite 적재
+├── kakao_db.py          # 결과 → SQLite 적재, 여러 사람 DB 합치기
 ├── schema.sql           # 공통 저장 구조 (참여자·채팅·세션·메시지·조각·D4·설문·생성·채점)
 ├── kakao_web.py         # 로컬 화면 서버
 ├── web/index.html
@@ -38,7 +38,8 @@ python kakao/kakao_db.py --out outputs/kakao --db outputs/kakao/research.db
 | --- | --- | --- |
 | `participant` | 참여자 | 실명 없음. 번호↔실명 대응표는 DB 밖에 보관 |
 | `chat` | 1:1 채팅방 | 관계(relation), 기간 |
-| `shared_room` | 같은 방을 낸 참여자 쌍 | 교차 비교 표시용 |
+| `shared_room` | 같은 방을 낸 참여자 쌍 | 교차 비교 표시용. DB에 넣을 때마다 지문으로 다시 계산 |
+| `chat_fingerprint` | 방의 메시지 지문 | (시각+이름 일반화 본문)의 해시. 본문 아님. DB 합칠 때 공유 방 찾기용 |
 | `session` | 대화 구간 | include(검토 결과), split(train/holdout) |
 | `message` | 메시지(전송 1회) | 익명화된 text. **포함된 세션만** 저장 |
 | `fragment` | 조각(상대 턴+본인 턴) | block4_text, embed_text, 검색 후보 여부, total_chars(②-2 계산용) |
@@ -52,6 +53,23 @@ python kakao/kakao_db.py --out outputs/kakao --db outputs/kakao/research.db
 뷰: `v_retrieval_pool`(D5 검색 후보), `v_model_visible_answers`(D6 골드셋 제외 — 프롬프트 생성은 이 뷰만 사용), `v_condition_means`(조건별 평균), `v_participant_summary`.
 
 같은 참여자를 다시 적재하면 채팅·세션·메시지·조각·D4만 새로 쓰고, 설문·생성·채점은 유지한다. 생성 기록이 참조하는 조각이 있으면 적재를 멈춘다(실험 후 데이터가 바뀌는 것 방지).
+
+### 여러 사람 DB 합치기
+
+팀원은 각자 자기 대화로 `research.db`를 만들고, **GitHub이 아닌 비공개 경로**(팀 드라이브 등)로 담당자에게 보낸다. 담당자가 하나로 합친다.
+
+```powershell
+python kakao/kakao_db.py --merge 받은/P01.db 받은/P02.db --db outputs/kakao/merged.db
+```
+
+화면에서는 4단계의 **여러 사람 DB 합치기** 카드에 받은 파일을 끌어다 놓고 합치기. (올린 사본은 `outputs/kakao_merge/`에 잠시 두었다가 합친 뒤 지움)
+
+- **참여자 ID가 겹치면 멈춘다.** 담당자가 미리 P01, P02 … 를 나눠 줄 것. 같은 사람의 새 버전으로 바꾸려면 `--replace` (화면: "같은 참여자는 새 것으로 바꾸기") — 그 참여자의 설문·생성·채점도 새 DB 것으로 바뀐다.
+- 설문 문항(`survey_item`)은 ID가 같으면 내용도 같아야 한다. 다르면 멈춘다.
+- 생성 기록 번호(`gen_id`)와 메시지 번호는 새로 매기고, 조각·채점 연결은 그대로 따라간다.
+- 80/20 분할 조건(holdout·방식·seed)이 DB마다 다르면 경고한다. 조건 비교가 공정하려면 모두 같은 값으로 build 해야 한다.
+- 하나라도 검사에 걸리면 아무것도 넣지 않는다. 다 넣은 뒤 참여자 사이의 공유 채팅방을 다시 찾는다.
+- 어느 파일을 언제 합쳤는지는 `meta.merged_sources`에 남는다.
 
 ## 1. 무엇이 고도화됐나
 
