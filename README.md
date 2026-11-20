@@ -31,6 +31,8 @@ Eoeum은 앞선 대화와 화자 간 관계를 참고해, 번역에서 말의 �
 2026_LinguaTech-Expo_Eoeum/
 ├── README.md
 ├── .gitignore
+├── .github/workflows/
+│   └── release-source.yml       # main으로 향하는 PR의 출발 브랜치 확인
 ├── app.py                       # 로컬 웹 서버 실행
 ├── pragmatics.py                # 번역 요청 생성 및 모델 호출
 ├── prompts.json                 # B0·B1·P1 비교 조건
@@ -54,7 +56,10 @@ Eoeum은 앞선 대화와 화자 간 관계를 참고해, 번역에서 말의 �
 
 ## 브랜치별 역할
 
-`main`은 각 작업의 변경사항을 PR로 검토하고 합치는 기본 브랜치입니다.
+작업 브랜치 → `develop` → `main` 순서로 PR을 합칩니다.
+
+1. 작업이 끝나면 PR의 **base**를 `develop`으로 선택합니다. `develop`에서 변경사항을 모아 함께 검증합니다.
+2. 최종본이 준비되면 **base**가 `main`이고 **compare**가 `develop`인 PR을 엽니다. 출발 브랜치 확인이 통과하면 병합합니다.
 
 | 작업 브랜치 | 담당 범위 |
 | --- | --- |
