@@ -9,3 +9,5 @@ data/kakao/
 *.db
 !kakao/samples/sample.db
 .claude/
+data/*.csv
+data/*.db
