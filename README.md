@@ -25,6 +25,35 @@ Eoeum은 앞선 대화와 화자 간 관계를 참고해, 번역에서 말의 �
 
 평가에서는 번역을 읽은 사람이 원문의 요청이나 거절을 같은 의도로 받아들이는지 살펴봅니다. 원문의 사실이 유지되는지, 근거 없는 약속이나 설명이 새로 들어갔는지, 공손함과 격식이 어떻게 달라졌는지도 확인합니다.
 
+## 디렉토리 구조
+
+데모 코드와 실험 자료를 추가할 때 적용할 구조입니다.
+
+```text
+2026_LinguaTech-Expo_Eoeum/
+├── README.md
+├── .gitignore
+├── app.py                       # 로컬 웹 서버 실행
+├── pragmatics.py                # 번역 요청 생성 및 모델 호출
+├── prompts.json                 # B0·B1·P1 비교 조건
+├── web/                         # 데모 화면
+│   ├── index.html
+│   ├── app.js
+│   └── styles.css
+├── data/                        # 방향별 파일럿 사례
+│   ├── pilot_en_ko.jsonl
+│   └── pilot_ko_en.jsonl
+├── scripts/
+│   └── prepare_experiment.py    # 사례 검증 및 실험 요청 파일 생성
+├── docs/
+│   ├── research_plan.md
+│   ├── annotation_guide.md
+│   └── related_work.md
+├── tests/
+│   └── test_core.py
+└── outputs/                     # 로컬 생성 결과물, Git 추적 제외
+```
+
 ## 진행 상태
 
 로컬 작업본에 브라우저 데모와 두 번역 방향의 합성 사례 초안이 있습니다. 데모에서는 앞선 대화와 관계를 입력하고 세 조건의 번역을 비교할 수 있습니다. 사례와 참고 번역은 사람 검토를 앞두고 있으며, 모델 비교 평가도 예정되어 있습니다.
