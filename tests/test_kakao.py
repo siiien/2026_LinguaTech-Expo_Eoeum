@@ -172,6 +172,51 @@ class DbTest(unittest.TestCase):
             shutil.rmtree(tmp, ignore_errors=True)
 
 
+class StaleOutputTest(unittest.TestCase):
+    """manifest 를 바꾸거나 build 를 건너뛰고 DB 에 저장하는 경우."""
+
+    def test_db_requires_fresh_build_and_old_participants_are_cleared(self):
+        import os
+        import kakao_db
+        tmp = Path(tempfile.mkdtemp())
+        try:
+            out, db = tmp / "out", tmp / "r.db"
+            m_all = ROOT / "samples" / "manifest.csv"
+            kakao_pipeline.main(["prepare", "--manifest", str(m_all), "--out", str(out)])
+            with self.assertRaises(SystemExit) as e:  # build 전에 저장
+                kakao_db.load(out, db)
+            self.assertIn("실행", str(e.exception))
+            kakao_pipeline.main(["build", "--out", str(out)])
+            kakao_db.load(out, db)
+
+            # 검토를 다시 저장하면 build 가 옛날 것 → 저장 거부
+            rv = out / "review" / "P01_sessions.csv"
+            later = (out / "summary.csv").stat().st_mtime + 5
+            os.utime(rv, (later, later))
+            with self.assertRaises(SystemExit) as e:
+                kakao_db.load(out, db)
+            self.assertIn("P01", str(e.exception))
+
+            # manifest 를 P02 만 남기고 다시 prepare → build: P01 작업·결과 폴더가 정리되어야 함
+            rows = [r for r in kakao_pipeline.read_csv_any(m_all) if r["participant_id"] == "P02"]
+            for r in rows:
+                r["file"] = str(ROOT / "samples" / r["file"])
+            m2 = tmp / "m2.csv"
+            with m2.open("w", encoding="utf-8", newline="") as f:
+                w = csv.DictWriter(f, fieldnames=list(rows[0]))
+                w.writeheader()
+                w.writerows(rows)
+            kakao_pipeline.main(["prepare", "--manifest", str(m2), "--out", str(out)])
+            self.assertFalse((out / "work" / "P01").exists())
+            self.assertTrue(rv.exists())  # 검토 결정은 남김
+            kakao_pipeline.main(["build", "--out", str(out)])
+            self.assertFalse((out / "P01").exists())
+            c = kakao_db.load(out, tmp / "r2.db")
+            self.assertEqual(c["participant"], 1)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+
 class DbMergeTest(unittest.TestCase):
     """한 사람씩 따로 만든 DB 를 합치면 한꺼번에 만든 DB 와 같아야 한다."""
 

@@ -18,6 +18,7 @@ import io
 import json
 import random
 import re
+import shutil
 import sys
 from collections import Counter, OrderedDict, defaultdict
 from datetime import datetime, timedelta
@@ -151,6 +152,7 @@ def cmd_prepare(args) -> int:
     errors = 0
     review_rows: Dict[str, List[Dict]] = defaultdict(list)
     review_text: Dict[str, List[str]] = defaultdict(list)
+    written: Set[Path] = set()
 
     for (pid, chat_id), rs in groups.items():
         relation = rs[0]["relation"]
@@ -237,6 +239,7 @@ def cmd_prepare(args) -> int:
             sessions.setdefault(sid, []).append(m)
             last = t
         write_jsonl(out / "work" / pid / f"{chat_id}.messages.jsonl", uniq)
+        written.add(out / "work" / pid / f"{chat_id}.messages.jsonl")
 
         n_flag = 0
         for sid, ms in sessions.items():
@@ -273,6 +276,22 @@ def cmd_prepare(args) -> int:
             report.append(f"- {pid}: 기존 검토 결과 {kept}개 세션 유지 (--reset-review 로 초기화)")
         write_csv(path, rws, fields)
         (out / "review" / f"{pid}_sessions.txt").write_text("\n".join(review_text[pid]), encoding="utf-8")
+
+    # manifest 에서 빠진 참여자·채팅방의 작업 파일은 지운다 (남아 있으면 build·DB 에 옛 데이터가 섞임).
+    # 검토 결정(review/*.csv)은 남겨 두어 다시 넣으면 이어서 쓸 수 있게 한다.
+    stale_pids, stale_chats = [], []
+    work = out / "work"
+    for pdir in sorted(p for p in work.iterdir() if p.is_dir()) if work.exists() else []:
+        for f in sorted(pdir.glob("*.messages.jsonl")):
+            if f not in written:
+                f.unlink()
+                stale_chats.append(f"{pdir.name}/{f.name.split('.')[0]}")
+        if not any(pdir.iterdir()):
+            shutil.rmtree(pdir)
+            stale_pids.append(pdir.name)
+    if stale_chats:
+        report.append(f"- 이번 manifest 에 없는 작업 파일 정리: {', '.join(stale_chats)}"
+                      + (f" (참여자 {', '.join(stale_pids)} 제외됨)" if stale_pids else ""))
 
     write_json(out / "work" / "prepare_config.json",
                {"version": VERSION, "gap_min": args.gap_min, "manifest": str(manifest), "keywords": args.keywords,
@@ -345,6 +364,9 @@ def cmd_build(args) -> int:
         print("[오류] work 폴더 없음 — prepare 먼저 실행", file=sys.stderr)
         return 1
     pids = sorted(p.name for p in work.iterdir() if p.is_dir())
+    for pdir in sorted(p for p in out.iterdir() if p.is_dir()):  # prepare 에서 빠진 참여자의 옛 결과 정리
+        if pdir.name not in pids and pdir.name not in ("work", "review") and (pdir / "sessions_split.csv").exists():
+            shutil.rmtree(pdir)
     summary: List[Dict] = []
     fps: Dict[Tuple[str, str], Set[str]] = {}
     frag_fields = ["fragment_id", "participant_id", "chat_id", "relation", "session_id", "split", "start",
