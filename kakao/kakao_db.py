@@ -41,14 +41,37 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8-sig") if path.exists() else ""
 
 
+def check_built(out_dir: Path, pids: List[str]) -> None:
+    """build 결과가 참여자마다 있고, 마지막 prepare·검토 저장보다 나중인지 확인한다."""
+    built_at = (out_dir / "summary.csv").stat().st_mtime
+    built = {r["participant_id"] for r in kp.read_csv_any(out_dir / "summary.csv")}
+    missing, stale = [], []
+    for pid in pids:
+        need = [out_dir / pid / n for n in ("sessions_split.csv", "fragments.jsonl")]
+        if pid not in built or not all(p.exists() for p in need):
+            missing.append(pid)
+            continue
+        inputs = list((out_dir / "work" / pid).glob("*.messages.jsonl")) + [out_dir / "review" / f"{pid}_sessions.csv"]
+        if any(p.exists() and p.stat().st_mtime > built_at for p in inputs):
+            stale.append(pid)
+    msgs = []
+    if missing:
+        msgs.append(f"{', '.join(missing)}: 만들기(build) 결과가 없음")
+    if stale:
+        msgs.append(f"{', '.join(stale)}: 익명화나 검토를 다시 한 뒤 만들기를 안 함 (결과가 옛날 것)")
+    if msgs:
+        raise SystemExit("[오류] DB에 넣지 않음 — " + " / ".join(msgs) + "\n→ 화면 4단계의 '실행'을 먼저 누른 뒤 다시 저장하세요")
+
+
 def load(out_dir: Path, db_path: Path) -> Dict[str, int]:
     out_dir = Path(out_dir)
     work = out_dir / "work"
-    if not (out_dir / "summary.csv").exists():
-        raise SystemExit(f"[오류] {out_dir} 에 build 결과가 없음 — prepare, build 를 먼저 실행")
+    pids = sorted(p.name for p in work.iterdir() if p.is_dir()) if work.exists() else []
+    if not pids or not (out_dir / "summary.csv").exists():
+        raise SystemExit("[오류] 아직 만들기(build)를 안 함 — 화면 4단계의 '실행'을 먼저 누르세요")
+    check_built(out_dir, pids)
     con = connect(Path(db_path))
     counts: Dict[str, int] = {}
-    pids = sorted(p.name for p in work.iterdir() if p.is_dir())
     try:
         with con:
             for pid in pids:
